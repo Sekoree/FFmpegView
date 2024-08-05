@@ -38,15 +38,17 @@ namespace FFmpegView
                             platform = $"osx-{PlantformUntils.ArchitectureString}";
                             break;
                         case Platforms.Windows:
-                            platform = PlantformUntils.IsArmArchitecture ? "win-arm64" : "win-x86";
+                            platform = PlantformUntils.IsArmArchitecture ? "win-arm64" : "win-x64";
                             break;
                     }
-                    libffmpegDirectoryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "libffmpeg", platform);
+                    libffmpegDirectoryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes" , platform, "native");
                 }
                 if (Directory.Exists(libffmpegDirectoryPath))
                 {
                     Debug.WriteLine($"FFmpeg binaries found in: {libffmpegDirectoryPath}");
                     ffmpeg.RootPath = libffmpegDirectoryPath;
+                    //var huh = ffmpeg.avcodec_configuration();
+                    var version = ffmpeg.av_version_info();
                     ffmpeg.avdevice_register_all();
                     ffmpeg.avformat_network_init();
                     ffmpeg.av_log_set_level(logLevel);

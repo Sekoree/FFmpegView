@@ -15,6 +15,22 @@ namespace FFmpegView.Bass
         {
             InitDll();
             IsInitialize = ManagedBass.Bass.Init();
+            //load plugins
+            if (IsInitialize)
+            {
+                var pluginFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "BassPlugins");
+                if (Directory.Exists(pluginFolder))
+                {
+                    var files = Directory.GetFiles(pluginFolder, "*.dll");
+                    foreach (var file in files)
+                    {
+                        if (ManagedBass.Bass.PluginLoad(file) == 0)
+                            Debug.WriteLine($"Failed to load plugin: {file}");
+                        else
+                            Debug.WriteLine($"Plugin loaded: {file}");
+                    }
+                }
+            }
         }
         private static bool InitDll()
         {

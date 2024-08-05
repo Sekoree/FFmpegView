@@ -5,5 +5,4 @@
         mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="250"
         x:Class="FFmpegView.AvaloniaDemo.MainWindow"
         Title="FFmpegView.AvaloniaDemo">
-	<FFmpegView x:Name="playerView" />
 </Window>

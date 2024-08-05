@@ -134,17 +134,24 @@ namespace FFmpegView
         public AVFrame FrameConvert(AVFrame* sourceFrame)
         {
             ffmpeg.sws_scale(convert, sourceFrame->data, sourceFrame->linesize, 0, sourceFrame->height, TargetData, TargetLinesize);
-            var data = new byte_ptrArray8();
-            data.UpdateFrom(TargetData);
-            var linesize = new int_array8();
-            linesize.UpdateFrom(TargetLinesize);
+            var exisData = new byte_ptrArray8();
+            exisData.UpdateFrom(TargetData);
+            var exisLinesize = new int_array8();
+            exisLinesize.UpdateFrom(TargetLinesize);
             return new AVFrame
             {
-                data = data,
-                linesize = linesize,
+                data = exisData,
+                linesize = exisLinesize,
                 width = FrameWidth,
                 height = FrameHeight
             };
+        }
+        
+        public void FrameConvert(AVFrame* sourceFrame, ref byte_ptrArray8 exisData, ref int_array8 exisLinesize)
+        {
+            ffmpeg.sws_scale(convert, sourceFrame->data, sourceFrame->linesize, 0, sourceFrame->height, TargetData, TargetLinesize);
+            exisData.UpdateFrom(TargetData);
+            exisLinesize.UpdateFrom(TargetLinesize);
         }
         public bool TryReadNextFrame(out AVFrame outFrame)
         {

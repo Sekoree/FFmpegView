@@ -12,22 +12,22 @@
   </PropertyGroup>
   <ItemGroup>
 	  <None Include="..\..\.editorconfig" Link=".editorconfig" />
-	  <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+	  <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
       <ProjectReference Include="..\FFmpegView.Shared\FFmpegView.Shared.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <PackageReference Include="System.Drawing.Common">
-      <Version>5.0.3</Version>
+      <Version>8.0.7</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows'">
     <PackageReference Include="System.Drawing.Common">
-      <Version>7.0.0</Version>
+      <Version>8.0.7</Version>
     </PackageReference>
   </ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0-windows'">
 		<PackageReference Include="System.Drawing.Common">
-			<Version>7.0.0</Version>
+			<Version>8.0.7</Version>
 		</PackageReference>
 	</ItemGroup>
 </Project>

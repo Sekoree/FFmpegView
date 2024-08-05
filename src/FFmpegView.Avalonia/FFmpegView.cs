@@ -11,12 +11,15 @@ using Avalonia.Threading;
 using PCLUntils.Objects;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 #if NET40_OR_GREATER
 using System.Runtime.ExceptionServices;
 using System.Security;
 #endif
 using System.Threading;
 using System.Threading.Tasks;
+using FFmpeg.AutoGen;
 
 namespace FFmpegView
 {
@@ -27,7 +30,7 @@ namespace FFmpegView
         private Image image;
         private Task playTask;
         private Task audioTask;
-        private Bitmap bitmap;
+        private WriteableBitmap bitmap;
         private AudioStreamDecoder audio;
         private readonly TimeSpan timeout;
         private bool _isRunning = true;
@@ -35,8 +38,10 @@ namespace FFmpegView
         private readonly bool isInit = false;
         private readonly VideoStreamDecoder video;
         private CancellationTokenSource cancellationToken;
+
         public static readonly StyledProperty<Stretch> StretchProperty =
             AvaloniaProperty.Register<FFmpegView, Stretch>(nameof(Stretch), Stretch.Uniform);
+
         /// <summary>
         /// Gets or sets a value controlling how the video will be stretched.
         /// </summary>
@@ -45,6 +50,7 @@ namespace FFmpegView
             get => GetValue(StretchProperty);
             set => SetValue(StretchProperty, value);
         }
+
         protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
         {
             base.OnDetachedFromLogicalTree(e);
@@ -59,22 +65,27 @@ namespace FFmpegView
                 Logger.TryGet(LogEventLevel.Error, LogArea.Control)?.Log(this, ex.Message);
             }
         }
+
         protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
         {
             _isAttached = true;
             base.OnAttachedToVisualTree(e);
         }
+
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
             _isAttached = false;
             base.OnDetachedFromVisualTree(e);
         }
+
         static FFmpegView()
         {
             StretchProperty.Changed.AddClassHandler<FFmpegView>(OnStretchChange);
         }
+
         public void SetAudioHandler(AudioStreamDecoder decoder) => audio = decoder;
         public void SetHeader(Dictionary<string, string> headers) => video.Headers = headers;
+
         private static void OnStretchChange(FFmpegView sender, AvaloniaPropertyChangedEventArgs e)
         {
             try
@@ -82,8 +93,11 @@ namespace FFmpegView
                 if (e.NewValue is Stretch stretch)
                     sender.image.Stretch = stretch;
             }
-            catch { }
+            catch
+            {
+            }
         }
+
         public FFmpegView()
         {
             video = new VideoStreamDecoder();
@@ -93,6 +107,7 @@ namespace FFmpegView
             video.MediaMsgRecevice += Video_MediaMsgRecevice;
             isInit = Init();
         }
+
         private void Video_MediaMsgRecevice(MsgType type, string msg)
         {
             if (type == MsgType.Error)
@@ -100,14 +115,18 @@ namespace FFmpegView
             else
                 Logger.TryGet(LogEventLevel.Information, LogArea.Control)?.Log(this, msg);
         }
+
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
             image = e.NameScope.Get<Image>("PART_ImageView");
         }
+
         private void VideoMediaCompleted(TimeSpan duration) =>
-                    Dispatcher.UIThread.InvokeAsync(DisplayVideoInfo);
+            Dispatcher.UIThread.InvokeAsync(DisplayVideoInfo);
+
         public double? Position => video?.Position.TotalSeconds;
+
         public bool Play()
         {
             bool state = false;
@@ -120,8 +139,10 @@ namespace FFmpegView
             {
                 Logger.TryGet(LogEventLevel.Error, LogArea.Control)?.Log(this, ex.Message);
             }
+
             return state;
         }
+
         public bool Play(MediaItem media)
         {
             if (!isInit)
@@ -129,6 +150,7 @@ namespace FFmpegView
                 Logger.TryGet(LogEventLevel.Error, LogArea.Control)?.Log(this, "FFmpeg : dosnot initialize device");
                 return false;
             }
+
             bool state = false;
             try
             {
@@ -140,6 +162,7 @@ namespace FFmpegView
                     audio?.Prepare();
                     DisplayVideoInfo();
                 }
+
                 state = video.Play();
                 audio?.Play();
             }
@@ -147,8 +170,10 @@ namespace FFmpegView
             {
                 Logger.TryGet(LogEventLevel.Error, LogArea.Control)?.Log(this, ex.Message);
             }
+
             return state;
         }
+
         public bool Play(string uri, Dictionary<string, string> headers = null)
         {
             if (!isInit)
@@ -156,6 +181,7 @@ namespace FFmpegView
                 Logger.TryGet(LogEventLevel.Error, LogArea.Control)?.Log(this, "FFmpeg : dosnot initialize device");
                 return false;
             }
+
             bool state = false;
             try
             {
@@ -167,6 +193,7 @@ namespace FFmpegView
                     audio?.Prepare();
                     DisplayVideoInfo();
                 }
+
                 state = video.Play();
                 audio?.Play();
             }
@@ -174,8 +201,10 @@ namespace FFmpegView
             {
                 Logger.TryGet(LogEventLevel.Error, LogArea.Control)?.Log(this, ex.Message);
             }
+
             return state;
         }
+
         public bool SeekTo(int seekTime)
         {
             try
@@ -189,6 +218,7 @@ namespace FFmpegView
                 return false;
             }
         }
+
         public bool Pause()
         {
             try
@@ -202,6 +232,7 @@ namespace FFmpegView
                 return false;
             }
         }
+
         public bool Stop()
         {
             try
@@ -216,6 +247,7 @@ namespace FFmpegView
                 return false;
             }
         }
+
         public void Dispo() => _isRunning = false;
         bool Init()
         {
@@ -259,25 +291,48 @@ namespace FFmpegView
 #endif
         private void DrawImage()
         {
+            var dataArray = new byte_ptrArray8();
+            var lineArray = new int_array8();
             while (_isRunning)
             {
                 try
                 {
                     if (video.IsPlaying && _isAttached)
                     {
-                        if (video.TryReadNextFrame(out var frame))
+                        if (!video.TryReadNextFrame(out var frame)) 
+                            continue;
+                        if (bitmap == null)
                         {
-                            var convertedFrame = video.FrameConvert(&frame);
-                            bitmap?.Dispose();
-                            bitmap = new Bitmap(PixelFormat.Bgra8888, AlphaFormat.Premul, (IntPtr)convertedFrame.data[0], new PixelSize(video.FrameWidth, video.FrameHeight), new Vector(96, 96), convertedFrame.linesize[0]);
+                            video.FrameConvert(&frame, ref dataArray, ref lineArray);
+                            bitmap = new WriteableBitmap(PixelFormat.Bgra8888, AlphaFormat.Premul,
+                                (IntPtr)dataArray[0], new PixelSize(video.FrameWidth, video.FrameHeight),
+                                new Vector(96, 96), lineArray[0]);
                             Dispatcher.UIThread.InvokeAsync(() =>
                             {
                                 if (image.IsNotEmpty())
                                     image.Source = bitmap;
                             });
                         }
+                        else
+                        {
+                            using var lockBit = bitmap.Lock();
+                            video.FrameConvert(&frame, ref dataArray, ref lineArray);
+                            //write data to bitmap address
+                            for (var y = 0; y < video.FrameHeight; y++)
+                            {
+                                Unsafe.CopyBlock((lockBit.Address + lockBit.RowBytes * y).ToPointer(),
+                                    (dataArray[0] + y * lineArray[0]), (uint)lineArray[0]);
+                            }
+
+                            Dispatcher.UIThread.InvokeAsync(() =>
+                            {
+                                image.InvalidateVisual();
+                            });
+                        }
                     }
-                    Thread.Sleep(10);
+
+                    else
+                        Thread.Sleep(10);
                 }
                 catch (Exception ex)
                 {
@@ -285,7 +340,9 @@ namespace FFmpegView
                 }
             }
         }
-#region 视频信息
+
+        #region 视频信息
+
         private string codec;
         public string Codec => codec;
         private TimeSpan duration;
@@ -304,6 +361,7 @@ namespace FFmpegView
         public long AudioBitrate => audioBitrate;
         private long audioBitsPerSample;
         public long AudioBitsPerSample => audioBitsPerSample;
+
         void DisplayVideoInfo()
         {
             try
@@ -321,8 +379,11 @@ namespace FFmpegView
                     audioBitsPerSample = audio.BitsPerSample;
                 }
             }
-            catch { }
+            catch
+            {
+            }
         }
-#endregion
+
+        #endregion
     }
 }

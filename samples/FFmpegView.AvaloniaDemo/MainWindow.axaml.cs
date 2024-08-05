@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using FFmpegView.Bass;
-using System.Collections.Generic;
+using FFmpegView.NAudio;
 
 namespace FFmpegView.AvaloniaDemo
 {
@@ -10,17 +10,26 @@ namespace FFmpegView.AvaloniaDemo
         public MainWindow()
         {
             AvaloniaXamlLoader.Load(this);
-            InitializeComponent();
         }
-        private void InitializeComponent()
+        
+        protected override void OnInitialized()
         {
+            base.OnInitialized();
             Width = 800;
             Height = 600;
 
-            var audioStreamDecoder = new BassAudioStreamDecoder();
-            audioStreamDecoder.Headers = new Dictionary<string, string> { { "User-Agent", "ffmpeg_demo" } };
-            playerView.SetAudioHandler(audioStreamDecoder);
-            playerView.Play("http://vfx.mtime.cn/Video/2019/02/04/mp4/190204084208765161.mp4");
+            //var audioStreamDecoder = new BassAudioStreamDecoder();
+            //audioStreamDecoder.Headers = new Dictionary<string, string> { { "User-Agent", "ffmpeg_demo" } };
+            var ffView = new FFmpegView();
+            this.Content = ffView;
+            //ffView.SetAudioHandler(audioStreamDecoder);
+            //ffView.Play("C:\\Users\\Sekoree\\Videos\\Marine Dreamin' (WIP).mp4");
+            var channel = ManagedBass.Bass.CreateStream("G:\\IMAS_Content\\MKVs\\THE IDOLM@STER MOVIE\\THE IDOLM@STER MOVIE.flac");
+            ffView.Play("G:\\IMAS_Content\\MKVs\\THE IDOLM@STER MOVIE\\THE IDOLM@STER MOVIE.mkv");
+            ManagedBass.Bass.ChannelSetPosition(channel, ManagedBass.Bass.ChannelSeconds2Bytes(channel, 6600));
+
+            ffView.SeekTo(6600);
+            ManagedBass.Bass.ChannelPlay(channel);
         }
     }
 }
